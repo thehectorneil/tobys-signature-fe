@@ -15,7 +15,7 @@ export default function Banner() {
       src: "/banner/banner1.jpg",
       title: "Classic Chocolate Cake",
       description:
-        "Rich, moist chocolate layers topped with creamy ganache — a timeless favorite!",
+        "Rich, moist chocolate layers topped with creamy ganache and berries — a timeless favorite!",
     },
     {
       src: "/banner/banner2.jpg",
