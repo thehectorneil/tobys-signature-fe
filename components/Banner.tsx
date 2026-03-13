@@ -90,13 +90,7 @@ export default function Banner() {
 
                   {/* Quantity + Buttons */}
                   <div className="flex flex-wrap items-center gap-3 mt-4">
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={handleQuantityChange}
-                      className="w-16 text-center text-black rounded-md py-1"
-                    />
+                   
                     <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-semibold">
                       Add to Cart
                     </button>

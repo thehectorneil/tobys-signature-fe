@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Nunito } from "next/font/google";
 import "./globals.css";
-import { Nunito } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import { AuthProvider } from "@/context/AuthContext";
 
 const nunito = Nunito({
   subsets: ["latin"],
-  weight: ["400", "600", "700"], // optional, include the weights you’ll use
+  weight: ["400", "600", "700"],
 });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Toby's Signature",
   description: "Cake shop website",
 };
@@ -30,17 +30,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-     <html lang="en" className={nunito.className}>
+    <html lang="en" className={nunito.className}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar />
-        <main>
+        <AuthProvider>
+          <Navbar />
 
-          
-          {children}
-          
+          <main>
+            {children}
           </main>
+
+        </AuthProvider>
       </body>
     </html>
   );
