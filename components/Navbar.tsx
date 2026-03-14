@@ -6,8 +6,8 @@ import Image from "next/image";
 import Logo from "../public/toby.jpg";
 import { Menu, X, ShoppingCart, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import api from "@/lib/axios";
 import { useAuth } from "@/context/AuthContext";
+import { loginRequest, setToken } from "@/lib/auth";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,20 +26,18 @@ export default function Navbar() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
+  
     try {
-      const res = await api.post("/auth/login", {
-        email,
-        password,
-      });
-
-      const token = res.data.token;
-
-      login(token);
-
+      const data = await loginRequest(email, password);
+  
+      setToken(data.token);
+  
+      login(data.token);
+  
       setLoginOpen(false);
-
+  
       router.push("/shop");
+  
     } catch (err: any) {
       setError(
         err.response?.data?.message ||

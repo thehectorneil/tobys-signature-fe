@@ -1,11 +1,12 @@
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import { API_BASE_URL } from "./api";
 
 /**
- * Axios instance using environment variable
+ * Axios instance
  */
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API,
+  baseURL: API_BASE_URL,
 });
 
 /**
@@ -28,7 +29,7 @@ function resetActivityTimer() {
 function logout() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("token");
-    window.location.href = "/";
+    window.location.href = "/login";
   }
 }
 
@@ -48,7 +49,7 @@ function isTokenExpired(token: string) {
 }
 
 /**
- * Track user activity (browser only)
+ * Track user activity
  */
 if (typeof window !== "undefined") {
   ["click", "mousemove", "keydown", "scroll"].forEach((event) =>
@@ -60,12 +61,14 @@ if (typeof window !== "undefined") {
  * Request interceptor
  */
 api.interceptors.request.use((config) => {
-  const token = typeof window !== "undefined"
-    ? localStorage.getItem("token")
-    : null;
+
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("token")
+      : null;
 
   /**
-   * Logout if inactive for 10 minutes
+   * Logout if inactive
    */
   if (Date.now() - lastActivity > INACTIVITY_LIMIT) {
     logout();
@@ -73,8 +76,9 @@ api.interceptors.request.use((config) => {
   }
 
   if (token) {
+
     /**
-     * Logout if token expired
+     * Check JWT expiration
      */
     if (isTokenExpired(token)) {
       logout();
