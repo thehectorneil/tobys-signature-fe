@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { AuthProvider } from "@/context/AuthContext";
 
 const nunito = Nunito({
@@ -40,7 +41,7 @@ export default function RootLayout({
           <main>
             {children}
           </main>
-
+          <Footer />
         </AuthProvider>
       </body>
     </html>
