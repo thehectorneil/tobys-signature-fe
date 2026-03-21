@@ -9,6 +9,7 @@ import { Menu, X, ShoppingCart, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { loginRequest, setToken } from "@/lib/auth";
+import { usePathname } from "next/navigation";
 
 const birthstone = Birthstone({
   weight: "400",
@@ -19,36 +20,56 @@ export default function Navbar() {
   
   const [isOpen, setIsOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
-
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "auto";
-  }, [isOpen]);
+  const [cartOpen, setCartOpen] = useState(false);
+  
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const { user, login, logout } = useAuth();
+  
+  const pathname = usePathname();
+
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? "hidden" : "auto";
+  }, [isOpen]);
+  
+  useEffect(() => {
+    if (!user) {
+      setCartOpen(false);
+    }
+  }, [!!user]); // 👈 use boolean instead of object
 
   const router = useRouter();
 
-  const cartCount = 3;
+  const [cartCount, setCartCount] = useState<number>(3);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
+  
     try {
       const data = await loginRequest(email, password);
-
+  
       setToken(data.token);
-
       login(data.token);
+  
+      setCartOpen(false);
+      setIsOpen(false);
 
       setLoginOpen(false);
-
-      router.push("/shop");
-
+  
+      if (redirectAfterLogin) {
+        setCartOpen(false);
+        setIsOpen(false);
+        router.push(redirectAfterLogin);
+        setRedirectAfterLogin(null);
+      } else {
+        router.push("/shop");
+      }
+  
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -60,7 +81,7 @@ export default function Navbar() {
   return (
     <>
       {/* DESKTOP NAVBAR */}
-      <nav className="fixed top-0 left-0 w-full bg-[#191a1e] text-white shadow-md z-50">
+      <nav className="fixed top-0 left-0 w-full navbar-gold-galaxy text-white shadow-md z-50">
         <div className="max-w-[1000px] mx-auto px-4 py-3 flex items-center justify-between">
 
           <Link href="/" className="flex items-center gap-3">
@@ -123,11 +144,30 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+      
+      {/* FLOATING CART BUTTON */}
+      {pathname !== "/cart" && (
+        <button
+          onClick={() => setCartOpen(!cartOpen)}
+          className={`md:hidden fixed bottom-28 right-5 bg-[#f8cf37] text-black p-3 rounded-full shadow-xl border border-[rgba(248,207,55,0.6)] transition-all ${
+            isOpen ? "z-30" : "z-50"
+          }`}
+        >
+          <ShoppingCart size={24} />
+
+          {cartCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 py-[1px] rounded-full">
+              {cartCount}
+            </span>
+          )}
+        </button>
+      )}
+      
 
       {/* FLOATING BURGER BUTTON */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed bottom-10 right-5 bg-[#f8cf37] text-black p-3 rounded-full shadow-xl shadow-[0_0_12px_rgba(248,207,55,0.8)] border border-[rgba(248,207,55,0.6)] z-50 animate-[heartbeat_2.5s_ease-in-out_infinite] hover:scale-110 active:scale-95 transition-transform"
+        className="md:hidden fixed bottom-10 right-5 bg-[#f8cf37] text-black p-3 rounded-full shadow-xl shadow-[0_0_12px_rgba(248,207,55,0.8)] border border-[rgba(248,207,55,0.6)] z-50 animate-[heartbeat_2.5s_ease-in-out_3] hover:scale-110 active:scale-95 transition-transform"
       >
         {isOpen ? <X size={26} /> : <Menu size={26} />}
       </button>
@@ -226,62 +266,139 @@ export default function Navbar() {
 
       </div>
 
+      {/* MOBILE CART PREVIEW */}
+        {cartOpen && pathname !== "/cart" && (
+          <div
+            className={`md:hidden fixed bottom-40 right-5 w-72 bg-[#191a1e] text-white rounded-xl shadow-2xl border border-[rgba(248,207,55,0.25)] p-4 animate-fadeIn ${
+              isOpen ? "z-30" : "z-50"}`}
+          >
+            <h3 className="text-[var(--brand)] font-semibold mb-3">
+              Your Cart
+            </h3>
 
-    {/* LOGIN MODAL */}
-    {loginOpen && (
-      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-
-        <div className="bg-white text-black p-8 rounded-lg w-[350px]">
-
-          <h2 className="text-xl font-semibold mb-4 text-center">
-            Login
-          </h2>
-
-          <form onSubmit={handleLogin}>
-
-            {error && (
-              <p className="text-red-500 text-sm mb-2">
-                {error}
+            {cartCount === 0 ? (
+              <p className="text-sm text-gray-400">
+                Your cart is empty.
               </p>
+            ) : (
+              <div className="space-y-3 text-sm">
+
+                {/* SAMPLE ITEM */}
+                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                  <span>Chocolate Cake</span>
+                  <span className="text-[var(--brand)]">₱1500</span>
+                </div>
+
+                <div className="flex justify-between items-center border-b border-gray-700 pb-2">
+                  <span>Strawberry Bliss</span>
+                  <span className="text-[var(--brand)]">₱1250</span>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    setCartOpen(false);
+
+                    if (!user) {
+                      setRedirectAfterLogin("/cart"); // 👈 set redirect
+                      setLoginOpen(true);
+                    } else {
+                      router.push("/cart");
+                    }
+                  }}
+                  className="block w-full mt-3 text-center bg-[var(--brand)] text-black font-semibold py-2 rounded-lg hover:brightness-95 transition"
+                >
+                  View Cart
+                </button>
+
+                {!user && (
+                  <p className="text-[10px] text-gray-400 text-center mt-2">
+                    Please login to view your cart
+                  </p>
+                )}
+
+              </div>
             )}
 
-            <input
-              type="email"
-              placeholder="Email"
-              className="w-full border p-2 mb-3 rounded"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          </div>
+        )}
 
-            <input
-              type="password"
-              placeholder="Password"
-              className="w-full border p-2 mb-4 rounded"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
 
-            <button
-              type="submit"
-              className="w-full bg-black text-white p-2 rounded"
-            >
-              Login
-            </button>
+      {/* LOGIN MODAL */}
+      {loginOpen && (
 
-          </form>
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-[#191a1e] text-white p-8 rounded-xl w-[360px] shadow-2xl border border-[rgba(248,207,55,0.25)]">
 
-          {/* CANCEL BUTTON */}
-          <button
-            onClick={() => setLoginOpen(false)}
-            className="text-sm text-gray-500 mt-4 w-full hover:text-gray-700"
-          >
-            Cancel
-          </button>
+      {/* LOGO CENTER */}
+      <div className="flex flex-col items-center mb-6">
 
-        </div>
+        <Image
+          src={Logo}
+          alt="Toby's Signature Logo"
+          width={70}
+          height={70}
+          className="rounded-full mb-3"
+        />
+
+        <h2 className={`${birthstone.className} text-[var(--brand)] text-3xl`}>
+          Toby's Signature
+        </h2>
 
       </div>
-    )}
+
+      {/* ERROR */}
+      {error && (
+        <p className="text-red-400 text-sm mb-3 text-center">
+          {error}
+        </p>
+      )}
+      
+      {redirectAfterLogin === "/cart" && (
+        <p className="text-xs text-gray-400 text-center mb-2">
+          Login to continue to your cart
+        </p>
+      )}
+
+      <form onSubmit={handleLogin}>
+
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full bg-[#232429] border border-gray-700 text-white p-2 mb-3 rounded-md focus:outline-none focus:border-[var(--brand)]"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full bg-[#232429] border border-gray-700 text-white p-2 mb-4 rounded-md focus:outline-none focus:border-[var(--brand)]"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          type="submit"
+          className="w-full bg-[var(--brand)] text-black font-semibold p-2 rounded-md hover:brightness-95 active:scale-[0.98] transition"
+        >
+          Login
+        </button>
+
+      </form>
+
+      {/* CANCEL */}
+      <button
+        onClick={() => setLoginOpen(false)}
+        className="text-sm text-gray-400 mt-4 w-full hover:text-[var(--brand)] transition"
+      >
+        Cancel
+      </button>
+
+      </div>
+
+      </div>
+      )}
+
         </>
       );
 }
