@@ -1,6 +1,6 @@
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 import { API_BASE_URL } from "./api";
+import { getToken, isTokenExpired, removeToken } from "./auth";
 
 /**
  * Axios instance
@@ -24,32 +24,19 @@ function resetActivityTimer() {
 }
 
 /**
- * Logout helper
+ * Logout helper (centralized)
  */
-function logout() {
+function forceLogout() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
-    window.location.href = "/login";
+    removeToken();
+
+    // optional: redirect to home instead of /login if you want
+    window.location.href = "/";
   }
 }
 
 /**
- * Check token expiration
- */
-function isTokenExpired(token: string) {
-  try {
-    const decoded: any = jwtDecode(token);
-
-    if (!decoded.exp) return true;
-
-    return decoded.exp * 1000 < Date.now();
-  } catch {
-    return true;
-  }
-}
-
-/**
- * Track user activity
+ * Track user activity (client only)
  */
 if (typeof window !== "undefined") {
   ["click", "mousemove", "keydown", "scroll"].forEach((event) =>
@@ -58,48 +45,49 @@ if (typeof window !== "undefined") {
 }
 
 /**
- * Request interceptor
+ * =========================
+ * REQUEST INTERCEPTOR
+ * =========================
  */
-api.interceptors.request.use((config) => {
-
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("token")
-      : null;
-
-  /**
-   * Logout if inactive
-   */
-  if (Date.now() - lastActivity > INACTIVITY_LIMIT) {
-    logout();
-    return Promise.reject("Session expired due to inactivity");
-  }
-
-  if (token) {
+api.interceptors.request.use(
+  (config) => {
+    const token = getToken();
 
     /**
-     * Check JWT expiration
+     * Logout if inactive
      */
-    if (isTokenExpired(token)) {
-      logout();
-      return Promise.reject("Token expired");
+    if (Date.now() - lastActivity > INACTIVITY_LIMIT) {
+      forceLogout();
+      return Promise.reject("Session expired due to inactivity");
     }
 
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+    if (token) {
+      /**
+       * Check JWT expiration
+       */
+      if (isTokenExpired(token)) {
+        forceLogout();
+        return Promise.reject("Token expired");
+      }
 
-  return config;
-});
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 /**
- * Response interceptor
+ * =========================
+ * RESPONSE INTERCEPTOR
+ * =========================
  */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-
     if (error.response?.status === 401) {
-      logout();
+      forceLogout();
     }
 
     return Promise.reject(error);

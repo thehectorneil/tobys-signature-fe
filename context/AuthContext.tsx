@@ -1,59 +1,82 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import {
+  getToken,
+  setToken,
+  removeToken,
+  isTokenValid,
+  getUserFromToken,
+  AuthResponse,
+  User,
+} from "@/lib/auth";
 
 interface AuthContextType {
-  user: any;
-  login: (token: string) => void;
+  user: User | null;
+  token: string | null;
+  login: (data: AuthResponse) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: any) {
-  const [user, setUser] = useState<any>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [tokenState, setTokenState] = useState<string | null>(null);
 
+  /* =========================
+     AUTO LOGIN ON REFRESH
+  ========================= */
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getToken();
 
-    if (!token) return;
+    if (!token || !isTokenValid()) {
+      removeToken();
+      return;
+    }
 
-    try {
-      const decoded: any = jwtDecode(token);
+    const decodedUser = getUserFromToken();
 
-      if (decoded.exp * 1000 > Date.now()) {
-        setUser(decoded);
-      } else {
-        localStorage.removeItem("token");
-      }
-    } catch {
-      localStorage.removeItem("token");
+    if (decodedUser) {
+      setUser(decodedUser);
+      setTokenState(token);
     }
   }, []);
 
-  function login(token: string) {
-    localStorage.setItem("token", token);
-    document.cookie = `token=${token}; path=/`;
+  /* =========================
+     LOGIN
+  ========================= */
+  function login(data: AuthResponse) {
+    setToken(data.token);
 
-    const decoded: any = jwtDecode(token);
+    setTokenState(data.token);
+    setUser(data.user);
 
-    setUser(decoded);
+    document.cookie = `token=${data.token}; path=/`;
   }
 
+  /* =========================
+     LOGOUT
+  ========================= */
   function logout() {
-    localStorage.removeItem("token");
-    document.cookie = "token=; Max-Age=0; path=/";
+    removeToken();
+
     setUser(null);
+    setTokenState(null);
+
+    document.cookie = "token=; Max-Age=0; path=/";
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, token: tokenState, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+/* =========================
+   HOOK
+========================= */
 export function useAuth() {
   const context = useContext(AuthContext);
 

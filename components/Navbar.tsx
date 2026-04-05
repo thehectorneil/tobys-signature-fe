@@ -8,7 +8,7 @@ import Logo from "../public/toby.jpg";
 import { Menu, X, ShoppingCart, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { loginRequest, setToken } from "@/lib/auth";
+import { AuthResponse, loginCustomer } from "@/lib/auth";
 import { usePathname } from "next/navigation";
 
 const birthstone = Birthstone({
@@ -51,19 +51,15 @@ export default function Navbar() {
     setError("");
   
     try {
-      const data = await loginRequest(email, password);
+      const data = await loginCustomer(email, password);
   
-      setToken(data.token);
-      login(data.token);
+      login(data);
   
       setCartOpen(false);
       setIsOpen(false);
-
       setLoginOpen(false);
   
       if (redirectAfterLogin) {
-        setCartOpen(false);
-        setIsOpen(false);
         router.push(redirectAfterLogin);
         setRedirectAfterLogin(null);
       } else {

@@ -1,33 +1,50 @@
 import { jwtDecode } from "jwt-decode";
 import api from "./axios";
 
-/**
- * Get token from localStorage
- */
+/* =========================
+   TYPES
+========================= */
+
+export type Role = "CUSTOMER" | "ADMIN" | "STAFF";
+
+export interface User {
+  id: number;
+  email: string;
+  role: Role;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: {
+    id: number;
+    email: string;
+    role: "CUSTOMER" | "ADMIN" | "STAFF";
+  };
+}
+
+/* =========================
+   TOKEN STORAGE
+========================= */
+
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("token");
 }
 
-/**
- * Save token
- */
 export function setToken(token: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem("token", token);
 }
 
-/**
- * Remove token
- */
-export function logout() {
+export function removeToken() {
   if (typeof window === "undefined") return;
   localStorage.removeItem("token");
 }
 
-/**
- * Decode JWT
- */
+/* =========================
+   JWT UTILITIES
+========================= */
+
 export function decodeToken(token: string): any | null {
   try {
     return jwtDecode(token);
@@ -36,9 +53,6 @@ export function decodeToken(token: string): any | null {
   }
 }
 
-/**
- * Check if token is expired
- */
 export function isTokenExpired(token: string): boolean {
   const decoded: any = decodeToken(token);
 
@@ -47,25 +61,70 @@ export function isTokenExpired(token: string): boolean {
   return decoded.exp * 1000 < Date.now();
 }
 
-/**
- * Check if token is valid
- */
 export function isTokenValid(): boolean {
   const token = getToken();
-
   if (!token) return false;
-
   return !isTokenExpired(token);
 }
 
-/**
- * Login API request
- */
-export async function loginRequest(email: string, password: string) {
-  const res = await api.post("/auth/login", {
+/* =========================
+   LOGIN APIs (MULTI ROLE)
+========================= */
+
+// CUSTOMER
+export async function loginCustomer(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  const res = await api.post<AuthResponse>("/auth/customer/login", {
     email,
     password,
   });
 
   return res.data;
+}
+
+// ADMIN
+export async function loginAdmin(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  const res = await api.post<AuthResponse>("/auth/admin/login", {
+    email,
+    password,
+  });
+
+  return res.data;
+}
+
+// STAFF
+export async function loginStaff(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  const res = await api.post<AuthResponse>("/auth/staff/login", {
+    email,
+    password,
+  });
+
+  return res.data;
+}
+
+/* =========================
+   OPTIONAL HELPERS
+========================= */
+
+export function getUserFromToken(): User | null {
+  const token = getToken();
+  if (!token) return null;
+
+  const decoded: any = decodeToken(token);
+
+  if (!decoded) return null;
+
+  return {
+    id: decoded.sub,
+    email: decoded.email,
+    role: decoded.role,
+  };
 }
