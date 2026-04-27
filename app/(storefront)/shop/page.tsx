@@ -1,4 +1,4 @@
-import Banner from "../components/Banner";
+import Banner from "@/components/Banner";
 import CardSlider from "@/components/CardSlider";
 import SearchBar from "@/components/SearchBar";
 import CategoryCircles from "@/components/CategoryCircles";

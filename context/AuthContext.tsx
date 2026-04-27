@@ -14,6 +14,7 @@ import {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  isLoading: boolean;
   login: (data: AuthResponse) => void;
   logout: () => void;
 }
@@ -23,24 +24,28 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tokenState, setTokenState] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   /* =========================
      AUTO LOGIN ON REFRESH
   ========================= */
   useEffect(() => {
     const token = getToken();
-
+  
     if (!token || !isTokenValid()) {
       removeToken();
+      setIsLoading(false);
       return;
     }
-
+  
     const decodedUser = getUserFromToken();
-
+  
     if (decodedUser) {
       setUser(decodedUser);
       setTokenState(token);
     }
+  
+    setIsLoading(false); // ✅ VERY IMPORTANT
   }, []);
 
   /* =========================
@@ -48,10 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ========================= */
   function login(data: AuthResponse) {
     setToken(data.token);
-
+  
+    const decodedUser = getUserFromToken(); // ✅ decode from JWT
+  
     setTokenState(data.token);
-    setUser(data.user);
-
+    setUser(decodedUser);
+  
     document.cookie = `token=${data.token}; path=/`;
   }
 
@@ -68,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token: tokenState, login, logout }}>
+    <AuthContext.Provider value={{ user, token: tokenState, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

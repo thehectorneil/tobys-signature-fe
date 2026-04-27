@@ -54,6 +54,7 @@ export default function Navbar() {
       const data = await loginCustomer(email, password);
   
       login(data);
+      console.log("USER AFTER LOGIN:", data);
   
       setCartOpen(false);
       setIsOpen(false);
