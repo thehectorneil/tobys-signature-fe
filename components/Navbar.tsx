@@ -52,9 +52,10 @@ export default function Navbar() {
   
     try {
       const data = await loginCustomer(email, password);
-  
+
+      // ✅ SUCCESS ONLY (no need to validate anymore)
       login(data);
-      console.log("USER AFTER LOGIN:", data);
+
   
       setCartOpen(false);
       setIsOpen(false);
@@ -68,10 +69,13 @@ export default function Navbar() {
       }
   
     } catch (err: any) {
+      // ✅ ERROR HANDLED HERE (401, 500, etc.)
       setError(
         err.response?.data?.message ||
         "Login failed. Please check your credentials."
       );
+  
+      // ❗ IMPORTANT: DO NOTHING ELSE → modal stays open
     }
   }
 

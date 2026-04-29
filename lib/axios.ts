@@ -86,7 +86,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const token = localStorage.getItem("token"); // or your getToken()
+
+    console.log("INTERCEPTOR HIT:", error.response?.status);
+    if (error.response?.status === 401 && token) {
+      // 🔥 only logout if user already had a session
       forceLogout();
     }
 

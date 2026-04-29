@@ -81,6 +81,8 @@ export async function loginCustomer(
     password,
   });
 
+  console.log(res.data)
+
   return res.data;
 }
 
